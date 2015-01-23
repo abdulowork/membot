@@ -4,6 +4,7 @@ import static java.lang.Thread.sleep;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 
@@ -11,7 +12,7 @@ import java.util.TreeMap;
 public class Domymembeanunsudo {
 
     public static void main(String[] args) throws Exception {
-        Domymembeanunsudo obj = new Domymembeanunsudo("biboran.chitali@gmail.com","Music1pazitiv");
+        Domymembeanunsudo obj = new Domymembeanunsudo("tim-solonin2@yandex.ru","Up760136");
         System.out.println("Sending GET request:");
         obj.getRequest();
         
@@ -25,8 +26,9 @@ public class Domymembeanunsudo {
         //System.out.println(obj.startingBarrier.get(1));
         obj.initSession();
         System.out.println("\nSession started");
-        Instant now = Instant.now().plusSeconds(300);
+        Instant now = Instant.now().plusSeconds(10*60);
         while (now.isAfter(Instant.now())) obj.solve();
+        if (obj.костыль) obj.solve();
         obj.quit();
     }
     
@@ -41,6 +43,7 @@ public class Domymembeanunsudo {
     public String redirect;
     public String id;
     public final String CFDUID = "dd03c37ddd861cefb827fc262fef885251421803491";
+    public boolean костыль;
     
     public Domymembeanunsudo(String login, String password){
         this.login = login;
@@ -174,14 +177,14 @@ public class Domymembeanunsudo {
                 startingBarrier.add(token.nextToken());
             }
         }
-        startingBarrier.set(1, startingBarrier.get(2).replace("+", "%2B")+"=");
+        startingBarrier.set(3, startingBarrier.get(2).replace("+", "%2B")+"=");
         //System.out.println(response.getBody());
         //System.out.println(startingBarrier.get(1));
     }
     
     public void initSession() throws Exception {
         String urlParameters = 
-                "barrier="+startingBarrier.get(1);
+                "barrier="+startingBarrier.get(3);
         Map<String, String> headerMap = new TreeMap<>();
         headerMap.put("Host", "membean.com");
         headerMap.put("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0");
@@ -192,7 +195,7 @@ public class Domymembeanunsudo {
         headerMap.put("Cookie", "__cfduid="+CFDUID+"; _new_membean_session_id="+Cookies.get(2)+"; auth_token="+Cookies.get(1));
         headerMap.put("Content-Type", "application/x-www-form-urlencoded");
         HttpResponse response = Unirest
-                .post("http://membean.com/training_sessions?t=5")
+                .post("http://membean.com/training_sessions?t=15")
                 .headers(headerMap)
                 .body(urlParameters)
                 .asString();
@@ -233,33 +236,43 @@ public class Domymembeanunsudo {
         
         temp2="?xhr=_xhr";
         String urlParameters;
-        int time = 41;
-        if (response.getBody().contains("spell!") || response.getBody().contains("finish_restudy!")) { 
-            urlParameters =
-                "event=spell!"+
-                "&time-on-page=%7B%22time%22%3A"+time+"%7D"+
-                "&id="+id+
-                "&barrier="+tempBarrier.get(1)+
-                "&it=0";  
-        sleep(40000);
-        }
-        if (response.getBody().contains("finish_study!")) { 
+        double time = 20+Math.random()*20+Math.random()*0.999;
+        
+        if (костыль) { 
+            System.out.println("finish_study!");
             urlParameters =
                 "pass=true"+
                 "&event=finish_study!"+
                 "&id="+id+
                 "&barrier="+tempBarrier.get(0)+
                 "&it=0";
-        sleep(7000);
+        sleep(4000+(int)(Math.random()*4000));
+        костыль = false;
         }
+        else if (response.getBody().contains("spell!") || response.getBody().contains("finish_restudy!")) { 
+            System.out.println("new word");
+            urlParameters =
+                "event=spell!"+
+                "&time-on-page=%7B%22time%22%3A"+time+"%7D"+
+                "&id="+id+
+                "&barrier="+tempBarrier.get(1)+
+                "&it=0";  
+        sleep((int)(1000*(time-1)));
+            System.out.println("sleeping for: "+1000*((int)time-1));
+        костыль = true;
+        //never code like this
+        if (response.getBody().contains("finish_restudy!")) костыль = false;
+        }
+        
         else {
+            System.out.println("default ans");
             urlParameters = 
                 "pass=true"+
                 "&event=answer!"+
                 "&id="+id+
                 "&barrier="+tempBarrier.get(1)+
                 "&it=0";
-        sleep(7000);
+        sleep(4000+(int)(Math.random()*4000));
         }
         Map<String, String> headerMap = new TreeMap<>();
         headerMap.put("Host", "membean.com");
