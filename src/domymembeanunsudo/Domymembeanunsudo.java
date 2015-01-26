@@ -39,7 +39,7 @@ public class Domymembeanunsudo {
         //"tim-solonin2@yandex.ru","Up760136"
         //
         //"mikhail.yakushin@mynbps.org","436398733"
-        Domymembeanunsudo obj = new Domymembeanunsudo("Aleksandr.Agapitov@mynbps.org","Alex1997",15);
+        Domymembeanunsudo obj = new Domymembeanunsudo("Aleksandr.Agapitov@mynbps.org","Alex1997",10);
         
         System.out.println("Sending GET request:");
         obj.getRequest();
@@ -186,13 +186,13 @@ public class Domymembeanunsudo {
             }
         }
         //0 - ?, 1 - 5min, 2 - 10min, etc...
-        startingBarrier.set(6, startingBarrier.get(4).replace("+", "%2B")+"=");
-        System.out.println(startingBarrier.get(4));
+        startingBarrier.set(2, startingBarrier.get(2).replace("+", "%2B")+"=");
+        System.out.println(startingBarrier.get(2));
     }
     
     public void initSession() throws Exception {
         String urlParameters = 
-                "barrier="+startingBarrier.get(4);
+                "barrier="+startingBarrier.get(2);
         Map<String, String> headerMap = new TreeMap<>();
         {
             headerMap.put("Host", "membean.com");
@@ -205,7 +205,7 @@ public class Domymembeanunsudo {
             headerMap.put("Content-Type", "application/x-www-form-urlencoded");
         }
         HttpResponse response = Unirest
-                .post("http://membean.com/training_sessions?t=20")
+                .post("http://membean.com/training_sessions?t=10")
                 .headers(headerMap)
                 .body(urlParameters)
                 .asString();
@@ -277,12 +277,12 @@ public class Domymembeanunsudo {
             System.out.println("restudy");
             urlParameters =
                 "event=finish_restudy!"+
-                "&time-on-page=%7B%22time%22%3A"+time+"%7D"+
+                "&time-on-page=%7B%22time%22%3A"+(double)time/1000+"%7D"+
                 "&id="+id+
                 "&barrier="+tempBarrier.get(1)+
                 "&it=0";  
-            sleep((int)(1000*time)); 
-            System.out.println("sleeping for: "+(int)(1000*time));
+            sleep(time); 
+            System.out.println("sleeping for: "+time);
         }
         
         else {
