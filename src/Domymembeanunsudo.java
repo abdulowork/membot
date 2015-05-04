@@ -1,4 +1,4 @@
-package domymembeanunsudo;
+//import com.mashape.unirest.http.*;
 import com.mashape.unirest.http.*;
 import static java.lang.Thread.sleep;
 import java.time.Instant;
@@ -11,7 +11,7 @@ import java.util.TreeMap;
 public class Domymembeanunsudo {
     
     //Chance to miss on a word
-    public double CHANCE = 0.15;
+    public double CHANCE;
     
     //Auth token required for login
     public String auth_token = new String();
@@ -28,50 +28,52 @@ public class Domymembeanunsudo {
     //ID of your session
     public String id;
     
-    //"d859fb6490f0273c949d9ea2f519437a81422231629";MISHA//"dd03c37ddd861cefb827fc262fef885251421803491";TIMA//Sanya
-    public final String CFDUID = "d8304d6f18dcdd5910a12af7af3d282bb1422237872";
+    //"d859fb6490f0273c949d9ea2f519437a81422231629";MISHA//TIMA"dd03c37ddd861cefb827fc262fef885251421803491";//Sanya
     
     //Because .contains("finish_study") doesn't work for some reason, and because you can name vars in any language :D
     public boolean костыль;
     
     
     public static void main(String[] args) throws Exception {
-        //"tim-solonin2@yandex.ru","Up760136"
-        //
-        //"mikhail.yakushin@mynbps.org","436398733"
-        Domymembeanunsudo obj = new Domymembeanunsudo("Aleksandr.Agapitov@mynbps.org","Alex1997",10);
+        Domymembeanunsudo obj = new Domymembeanunsudo(args[0],args[1], Integer.parseInt(args[2]), Double.parseDouble(args[3]), args[4]);
         
-        System.out.println("Sending GET request:");
+        //System.out.println("Sending GET request:");
         obj.getRequest();
         
-        System.out.println("\nSending POST request:");
+        //System.out.println("\nSending POST request:");
         obj.postRequest();
         
-        System.out.println("\nObtaining barrier for session");
+        //System.out.println("\nObtaining barrier for session");
         obj.getNew();
         
-        System.out.println("\nSession started");
+        //System.out.println("\nSession started");
         obj.initSession();
         
-        System.out.println(Instant.now()); //What time is it? Membean time!
+        //System.out.println(Instant.now()); //What time is it? Membean time!
         
         while (obj.end.isAfter(Instant.now())) obj.solve();
         
         if (obj.костыль) obj.solve(); //This is required in case loop ends on finish_study! ,in this case bot has to run extra loop since you can't end session from finish_study!
         
-        System.out.println("ABORT MISSION");
+        //System.out.println("ABORT MISSION");
         obj.quit();
+        
     }
  
     //Default constructor
     public final String login;
     public final String password;
     public Instant end;
+    public int time;
+    public String CFDUID = new String();
     
-    public Domymembeanunsudo(String login, String password, int minutes){
+    public Domymembeanunsudo(String login, String password, int minutes, double chance, String CFDUID){
         this.login = login;
         this.password = password;
         end = Instant.now().plusSeconds(minutes*60);
+        time = minutes;
+        CHANCE = chance;
+        this.CFDUID = CFDUID;
     }
     
     public void getRequest() throws Exception {
@@ -91,11 +93,15 @@ public class Domymembeanunsudo {
         String toParse = response.getBody();
         {
             //Parsing for auth token
-            int index = toParse.indexOf("authenticity_token");
-            String temp = toParse.substring(index+56,index+99);
-            temp = temp.replace("+", "%2B"); //This took me 4
+            int index = toParse.indexOf("<meta name=\"csrf-token\" content=\"");
+            String temp = toParse.substring(index+33,index+121);
+            temp = temp.replace("+", "%2B"); //This took me 4 hours
+            temp = temp.replace("=", "%3D");
+            temp = temp.replace("/", "%2F");
             auth_token = temp;
         }
+        
+        System.out.println(auth_token);
         
         Object[] headers = response.getHeaders().values().toArray();
         {
@@ -115,13 +121,14 @@ public class Domymembeanunsudo {
                 if (currentToken.contains("__cfduid") || currentToken.contains("_new_membean_session_id"))
                     Cookies.add(token.nextToken());                 
             }
+            System.out.println(Cookies);
         }
     }
     
     public void postRequest() throws Exception {
         String urlParameters = 
             "utf8="+"%E2%9C%93"+
-            "&authenticity_token="+auth_token+"="+
+            "&authenticity_token="+auth_token+
             "&login_session%5Blogin%5D="+login+
             "&login_session%5Bpassword%5D="+password+
             "&login_session%5Bremeber_me%5D="+0+
@@ -136,13 +143,14 @@ public class Domymembeanunsudo {
         headerMap.put("Cookie", "__cfduid="+CFDUID+"; _new_membean_session_id="+Cookies.get(0));
         headerMap.put("Connection", "keep-alive");
         headerMap.put("Content-Type", "application/x-www-form-urlencoded");
-
+        //headerMap.put("Content-Length", "256");
+        
         HttpResponse response = Unirest
                 .post("https://membean.com/sessions")
                 .headers(headerMap)
                 .body(urlParameters)
                 .asString();
-        
+        System.out.println(response.getHeaders());
         Object[] headers = response.getHeaders().values().toArray();
         {
             ArrayList<String> temp = new <String>ArrayList();
@@ -161,6 +169,7 @@ public class Domymembeanunsudo {
     }
     
     public void getNew() throws Exception {
+        System.out.println(Cookies.get(1));//+" : "+Cookies.get(1)+" : "+Cookies.get(2));
         HttpResponse<String> response = Unirest
                 .get("http://membean.com/training_sessions/new")
                 .header("Host", "membean.com")
@@ -186,13 +195,14 @@ public class Domymembeanunsudo {
             }
         }
         //0 - ?, 1 - 5min, 2 - 10min, etc...
-        startingBarrier.set(2, startingBarrier.get(2).replace("+", "%2B")+"=");
-        System.out.println(startingBarrier.get(2));
+       
+        startingBarrier.set(time/5, startingBarrier.get(time/5).replace("+", "%2B")+"=");
+        System.out.println(startingBarrier.get(time/5));
     }
     
     public void initSession() throws Exception {
         String urlParameters = 
-                "barrier="+startingBarrier.get(2);
+                "barrier="+startingBarrier.get(time/5);
         Map<String, String> headerMap = new TreeMap<>();
         {
             headerMap.put("Host", "membean.com");
@@ -205,7 +215,7 @@ public class Domymembeanunsudo {
             headerMap.put("Content-Type", "application/x-www-form-urlencoded");
         }
         HttpResponse response = Unirest
-                .post("http://membean.com/training_sessions?t=10")
+                .post("http://membean.com/training_sessions?t="+time)
                 .headers(headerMap)
                 .body(urlParameters)
                 .asString();
@@ -254,7 +264,8 @@ public class Domymembeanunsudo {
                 "&event=finish_study!"+
                 "&id="+id+
                 "&barrier="+tempBarrier.get(0)+
-                "&it=0";
+                "&it=0"+
+                "&more_ts=neophyte";
             sleep((int)(6000+(Math.random()*6000)));
             костыль = false;
         }
@@ -266,7 +277,8 @@ public class Domymembeanunsudo {
                 "&time-on-page=%7B%22time%22%3A"+(double)time/1000+"%7D"+
                 "&id="+id+
                 "&barrier="+tempBarrier.get(1)+
-                "&it=0";  
+                "&it=0"+
+                    "&more_ts=neophyte";  
             sleep(time);
             System.out.println("sleeping for: "+time);
             //Never code like this
@@ -280,7 +292,8 @@ public class Domymembeanunsudo {
                 "&time-on-page=%7B%22time%22%3A"+(double)time/1000+"%7D"+
                 "&id="+id+
                 "&barrier="+tempBarrier.get(1)+
-                "&it=0";  
+                "&it=0"+
+                    "&more_ts=neophyte";  
             sleep(time); 
             System.out.println("sleeping for: "+time);
         }
@@ -297,7 +310,8 @@ public class Domymembeanunsudo {
                 "&event=answer!"+
                 "&id="+id+
                 "&barrier="+tempBarrier.get(1)+
-                "&it=0";
+                "&it=0"+
+                    "&more_ts=neophyte";
             sleep((int)(6000+(Math.random()*6000)));
         }
         
@@ -357,7 +371,8 @@ public class Domymembeanunsudo {
                 "event="+event+
                 "&id="+id+
                 "&barrier="+tempBarrier.get(0)+
-                "&it=0";
+                "&it=0"+
+                "&more_ts=neophyte";
         
         Map<String, String> headerMap = new TreeMap<>();
         {
@@ -380,6 +395,6 @@ public class Domymembeanunsudo {
                 .body(urlParameters)
                 .asString();
         
-        System.out.println(commit.getBody());
+        //System.out.println(commit.getBody());
     }
 }
